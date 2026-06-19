@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>免疫系统防御 - Immune Defense</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="game-container">
+    <div class="game-header">
+      <h1 class="game-title">免疫系统防御</h1>
+      <p class="game-subtitle">Immune System Defense</p>
+    </div>
+
+    <div class="game-wrapper">
+      <div class="hud-panel top-hud">
+        <div class="hud-item">
+          <span class="hud-label">健康细胞</span>
+          <span class="hud-value cell-value" id="cellCount">25</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">白细胞</span>
+          <span class="hud-value wbc-value" id="wbccCount">80</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">病毒</span>
+          <span class="hud-value virus-value" id="virusCount">5</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">波次</span>
+          <span class="hud-value wave-value" id="waveCount">1</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">得分</span>
+          <span class="hud-value score-value" id="scoreValue">0</span>
+        </div>
+      </div>
+
+      <canvas id="gameCanvas"></canvas>
+
+      <div class="control-panel">
+        <button class="control-btn" id="pauseBtn" title="暂停/继续 (空格)">
+          ⏸ 暂停
+        </button>
+        <button class="control-btn" id="restartBtn" title="重新开始 (R)">
+          ↻ 重新开始
+        </button>
+      </div>
+
+      <div class="chemokine-bar">
+        <div class="chemokine-btn active" data-index="0">
+          <div class="chemokine-icon attract"></div>
+          <span class="chemokine-name">吸引因子</span>
+          <span class="chemokine-key">1</span>
+        </div>
+        <div class="chemokine-btn" data-index="1">
+          <div class="chemokine-icon excite"></div>
+          <span class="chemokine-name">激活因子</span>
+          <span class="chemokine-key">2</span>
+        </div>
+        <div class="chemokine-btn" data-index="2">
+          <div class="chemokine-icon alert"></div>
+          <span class="chemokine-name">警报因子</span>
+          <span class="chemokine-key">3</span>
+        </div>
+      </div>
+
+      <div class="instructions-panel">
+        <p><strong>操作说明：</strong></p>
+        <p>• 点击画布施放选中的趋化因子</p>
+        <p>• 按 1/2/3 键切换不同的因子</p>
+        <p>• 空格键暂停游戏</p>
+        <p>• R 键重新开始</p>
+      </div>
+    </div>
+
+    <div class="game-footer">
+      <p>引导白细胞大军，消灭入侵的病毒，保护健康细胞！</p>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/diffusion.js"></script>
+  <script src="js/boids.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

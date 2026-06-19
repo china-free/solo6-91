@@ -8,9 +8,12 @@ class WhiteBloodCell {
     this.vx = Math.cos(angle) * 0.5;
     this.vy = Math.sin(angle) * 0.5;
     this.radius = CONFIG.whiteBloodCells.radius;
-    this.maxSpeed = CONFIG.whiteBloodCells.maxSpeed;
-    this.drag = CONFIG.whiteBloodCells.drag;
+    this.linearDrag = CONFIG.whiteBloodCells.linearDrag;
+    this.quadraticDrag = CONFIG.whiteBloodCells.quadraticDrag;
+    this.minSpeed = CONFIG.whiteBloodCells.minSpeed;
+    this.thrustMultiplier = CONFIG.whiteBloodCells.thrustMultiplier;
     this.wobbleAmount = CONFIG.whiteBloodCells.wobbleAmount;
+    this.wobbleFrequency = CONFIG.whiteBloodCells.wobbleFrequency;
     this.type = type;
     this.state = 'wandering';
     this.health = 100;
@@ -23,6 +26,9 @@ class WhiteBloodCell {
     this.wobbleSpeed = 0.1 + Math.random() * 0.05;
     this.targetVirus = null;
     this.excitedLevel = 0;
+    this.baseThrust = this.thrustMultiplier;
+    this.baseLinearDrag = this.linearDrag;
+    this.baseQuadraticDrag = this.quadraticDrag;
   }
 
   setDiffusionField(field) {
@@ -37,11 +43,8 @@ class WhiteBloodCell {
     }
 
     if (this.excitedLevel > 0) {
-      this.excitedLevel *= 0.99;
+      this.excitedLevel *= 0.995;
     }
-
-    const effectiveSpeed = this.maxSpeed * (1 + this.excitedLevel * 0.5);
-    const effectiveAttack = this.attackPower * (1 + this.excitedLevel * 0.8);
 
     if (this.diffusionField) {
       const exciteConc = this.diffusionField.getConcentration(
@@ -50,9 +53,14 @@ class WhiteBloodCell {
         this.y
       );
       if (exciteConc > 10) {
-        this.excitedLevel = Math.min(1, this.excitedLevel + 0.02);
+        this.excitedLevel = Math.min(1, this.excitedLevel + 0.015);
       }
     }
+
+    this.thrustMultiplier = this.baseThrust * (1 + this.excitedLevel * 0.6);
+    this.linearDrag = this.baseLinearDrag * (1 - this.excitedLevel * 0.3);
+    this.quadraticDrag = this.baseQuadraticDrag * (1 - this.excitedLevel * 0.2);
+    this.attackPower = 10 * (1 + this.excitedLevel * 1.0);
 
     this.state = 'wandering';
     if (this.targetVirus && this.targetVirus.health > 0) {
@@ -63,24 +71,19 @@ class WhiteBloodCell {
       if (dist < this.radius + this.targetVirus.radius + 5) {
         this.state = 'attacking';
         if (this.attackCooldown <= 0) {
-          this.targetVirus.takeDamage(effectiveAttack);
+          this.targetVirus.takeDamage(this.attackPower);
           this.attackCooldown = this.attackCooldownMax;
         }
-      } else if (dist < 150) {
+      } else if (dist < 200) {
         this.state = 'chasing';
         const dir = Utils.vec.norm({
           x: this.targetVirus.x - this.x,
           y: this.targetVirus.y - this.y,
         });
-        this.vx += dir.x * 0.05;
-        this.vy += dir.y * 0.05;
+        const chaseForce = 0.12 * this.thrustMultiplier;
+        this.vx += dir.x * chaseForce;
+        this.vy += dir.y * chaseForce;
       }
-    }
-
-    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-    if (speed > effectiveSpeed) {
-      this.vx = (this.vx / speed) * effectiveSpeed;
-      this.vy = (this.vy / speed) * effectiveSpeed;
     }
 
     this.x = Utils.clamp(

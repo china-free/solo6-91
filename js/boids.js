@@ -73,29 +73,78 @@ class BoidsSystem {
     acceleration.x += chemotaxis.x * CONFIG.boids.chemotaxisWeight;
     acceleration.y += chemotaxis.y * CONFIG.boids.chemotaxisWeight;
 
-    acceleration.x += boundary.x * 2;
-    acceleration.y += boundary.y * 2;
+    acceleration.x += boundary.x * CONFIG.boids.boundaryWeight;
+    acceleration.y += boundary.y * CONFIG.boids.boundaryWeight;
 
-    boid.vx += acceleration.x;
-    boid.vy += acceleration.y;
+    const thrustMul = boid.thrustMultiplier || CONFIG.whiteBloodCells.thrustMultiplier;
+    boid.vx += acceleration.x * thrustMul;
+    boid.vy += acceleration.y * thrustMul;
 
     const speed = Math.sqrt(boid.vx * boid.vx + boid.vy * boid.vy);
-    const maxSpeed = boid.maxSpeed || CONFIG.whiteBloodCells.maxSpeed;
-    if (speed > maxSpeed) {
-      boid.vx = (boid.vx / speed) * maxSpeed;
-      boid.vy = (boid.vy / speed) * maxSpeed;
+
+    if (speed > 0.001) {
+      const linearDrag = boid.linearDrag || CONFIG.whiteBloodCells.linearDrag;
+      const quadraticDrag = boid.quadraticDrag || CONFIG.whiteBloodCells.quadraticDrag;
+
+      const dragAccel = linearDrag + quadraticDrag * speed;
+      const dragFactor = Math.max(0, 1 - dragAccel);
+
+      boid.vx *= dragFactor;
+      boid.vy *= dragFactor;
     }
 
-    const drag = boid.drag || CONFIG.whiteBloodCells.drag;
-    boid.vx *= 1 - drag;
-    boid.vy *= 1 - drag;
+    const newSpeed = Math.sqrt(boid.vx * boid.vx + boid.vy * boid.vy);
+    const minSpeed = boid.minSpeed || CONFIG.whiteBloodCells.minSpeed;
+    if (newSpeed < minSpeed && newSpeed > 0) {
+      const boost = (minSpeed - newSpeed) * 0.1;
+      boid.vx += (boid.vx / newSpeed) * boost;
+      boid.vy += (boid.vy / newSpeed) * boost;
+    } else if (newSpeed === 0) {
+      const angle = Math.random() * Math.PI * 2;
+      boid.vx = Math.cos(angle) * minSpeed;
+      boid.vy = Math.sin(angle) * minSpeed;
+    }
 
-    const wobble = boid.wobbleAmount || CONFIG.whiteBloodCells.wobbleAmount;
-    boid.vx += (Math.random() - 0.5) * wobble;
-    boid.vy += (Math.random() - 0.5) * wobble;
+    const wobbleAmount = boid.wobbleAmount || CONFIG.whiteBloodCells.wobbleAmount;
+    const wobbleFreq = boid.wobbleFrequency || CONFIG.whiteBloodCells.wobbleFrequency;
+
+    if (boid.brownianPhase === undefined) {
+      boid.brownianPhase = Math.random() * Math.PI * 2;
+      boid.brownianPhase2 = Math.random() * Math.PI * 2;
+      boid.brownianSpeed = wobbleFreq * (0.8 + Math.random() * 0.4);
+      boid.brownianSpeed2 = wobbleFreq * (0.6 + Math.random() * 0.5);
+    }
+
+    boid.brownianPhase += boid.brownianSpeed;
+    boid.brownianPhase2 += boid.brownianSpeed2;
+
+    const brownianX = Math.sin(boid.brownianPhase) + Math.sin(boid.brownianPhase2 * 1.7) * 0.5;
+    const brownianY = Math.cos(boid.brownianPhase * 0.8) + Math.cos(boid.brownianPhase2 * 1.3) * 0.5;
+
+    const brownianStrength = wobbleAmount * (0.5 + newSpeed * 0.3);
+    boid.vx += brownianX * brownianStrength;
+    boid.vy += brownianY * brownianStrength;
+
+    if (isNaN(boid.vx) || isNaN(boid.vy) || !isFinite(boid.vx) || !isFinite(boid.vy)) {
+      const angle = Math.random() * Math.PI * 2;
+      boid.vx = Math.cos(angle) * 0.5;
+      boid.vy = Math.sin(angle) * 0.5;
+    }
+
+    const finalSpeed = Math.sqrt(boid.vx * boid.vx + boid.vy * boid.vy);
+    const maxAllowedSpeed = 5.0;
+    if (finalSpeed > maxAllowedSpeed) {
+      boid.vx = (boid.vx / finalSpeed) * maxAllowedSpeed;
+      boid.vy = (boid.vy / finalSpeed) * maxAllowedSpeed;
+    }
 
     boid.x += boid.vx;
     boid.y += boid.vy;
+
+    if (isNaN(boid.x) || isNaN(boid.y)) {
+      boid.x = CONFIG.canvas.width / 2;
+      boid.y = CONFIG.canvas.height / 2;
+    }
   }
 
   calculateSeparation(boid, neighbors) {
@@ -155,14 +204,14 @@ class BoidsSystem {
       steer.x /= count;
       steer.y /= count;
 
+      const desiredSpeed = 1.0;
       const mag = Math.sqrt(steer.x * steer.x + steer.y * steer.y);
       if (mag > 0) {
-        const maxSpeed = boid.maxSpeed || CONFIG.whiteBloodCells.maxSpeed;
-        steer.x = (steer.x / mag) * maxSpeed - boid.vx;
-        steer.y = (steer.y / mag) * maxSpeed - boid.vy;
+        steer.x = (steer.x / mag) * desiredSpeed - boid.vx;
+        steer.y = (steer.y / mag) * desiredSpeed - boid.vy;
       }
 
-      const maxForce = 0.05;
+      const maxForce = CONFIG.boids.maxForce * 0.6;
       const m = Math.sqrt(steer.x * steer.x + steer.y * steer.y);
       if (m > maxForce) {
         steer.x = (steer.x / m) * maxForce;
@@ -202,15 +251,15 @@ class BoidsSystem {
 
       const mag = Math.sqrt(desired.x * desired.x + desired.y * desired.y);
       if (mag > 0) {
-        const maxSpeed = boid.maxSpeed || CONFIG.whiteBloodCells.maxSpeed;
-        desired.x = (desired.x / mag) * maxSpeed;
-        desired.y = (desired.y / mag) * maxSpeed;
+        const desiredSpeed = 1.2;
+        desired.x = (desired.x / mag) * desiredSpeed;
+        desired.y = (desired.y / mag) * desiredSpeed;
 
         steer.x = desired.x - boid.vx;
         steer.y = desired.y - boid.vy;
       }
 
-      const maxForce = 0.03;
+      const maxForce = CONFIG.boids.maxForce * 0.5;
       const m = Math.sqrt(steer.x * steer.x + steer.y * steer.y);
       if (m > maxForce) {
         steer.x = (steer.x / m) * maxForce;

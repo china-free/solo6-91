@@ -21,21 +21,25 @@ const CONFIG = {
   whiteBloodCells: {
     count: 80,
     radius: 6,
-    maxSpeed: 1.5,
-    maxForce: 0.08,
-    drag: 0.02,
-    wobbleAmount: 0.3,
+    linearDrag: 0.04,
+    quadraticDrag: 0.12,
+    minSpeed: 0.12,
+    thrustMultiplier: 4.0,
+    wobbleAmount: 0.5,
+    wobbleFrequency: 0.1,
   },
 
   // Boids 参数
   boids: {
-    separationRadius: 25,
-    alignmentRadius: 40,
-    cohesionRadius: 50,
-    separationWeight: 1.5,
-    alignmentWeight: 1.0,
-    cohesionWeight: 1.0,
-    chemotaxisWeight: 2.5,
+    separationRadius: 28,
+    alignmentRadius: 45,
+    cohesionRadius: 55,
+    separationWeight: 2.8,
+    alignmentWeight: 1.6,
+    cohesionWeight: 2.0,
+    chemotaxisWeight: 6.0,
+    boundaryWeight: 4.0,
+    maxForce: 0.25,
   },
 
   // 健康细胞设置

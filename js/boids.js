@@ -85,9 +85,13 @@ class BoidsSystem {
     if (speed > 0.001) {
       const linearDrag = boid.linearDrag || CONFIG.whiteBloodCells.linearDrag;
       const quadraticDrag = boid.quadraticDrag || CONFIG.whiteBloodCells.quadraticDrag;
+      const cubicDrag = boid.cubicDrag || CONFIG.whiteBloodCells.cubicDrag || 0;
 
-      const dragAccel = linearDrag + quadraticDrag * speed;
-      const dragFactor = Math.max(0, 1 - dragAccel);
+      const totalDrag = linearDrag
+                      + quadraticDrag * speed
+                      + cubicDrag * speed * speed;
+
+      const dragFactor = Math.exp(-totalDrag);
 
       boid.vx *= dragFactor;
       boid.vy *= dragFactor;
@@ -96,9 +100,9 @@ class BoidsSystem {
     const newSpeed = Math.sqrt(boid.vx * boid.vx + boid.vy * boid.vy);
     const minSpeed = boid.minSpeed || CONFIG.whiteBloodCells.minSpeed;
     if (newSpeed < minSpeed && newSpeed > 0) {
-      const boost = (minSpeed - newSpeed) * 0.1;
-      boid.vx += (boid.vx / newSpeed) * boost;
-      boid.vy += (boid.vy / newSpeed) * boost;
+      const boostRatio = (minSpeed / newSpeed - 1) * 0.12;
+      boid.vx += boid.vx * boostRatio;
+      boid.vy += boid.vy * boostRatio;
     } else if (newSpeed === 0) {
       const angle = Math.random() * Math.PI * 2;
       boid.vx = Math.cos(angle) * minSpeed;
@@ -111,31 +115,41 @@ class BoidsSystem {
     if (boid.brownianPhase === undefined) {
       boid.brownianPhase = Math.random() * Math.PI * 2;
       boid.brownianPhase2 = Math.random() * Math.PI * 2;
-      boid.brownianSpeed = wobbleFreq * (0.8 + Math.random() * 0.4);
-      boid.brownianSpeed2 = wobbleFreq * (0.6 + Math.random() * 0.5);
+      boid.brownianPhase3 = Math.random() * Math.PI * 2;
+      boid.brownianSpeed = wobbleFreq * (0.7 + Math.random() * 0.6);
+      boid.brownianSpeed2 = wobbleFreq * (1.1 + Math.random() * 0.8);
+      boid.brownianSpeed3 = wobbleFreq * (1.8 + Math.random() * 1.2);
     }
 
     boid.brownianPhase += boid.brownianSpeed;
     boid.brownianPhase2 += boid.brownianSpeed2;
+    boid.brownianPhase3 += boid.brownianSpeed3;
 
-    const brownianX = Math.sin(boid.brownianPhase) + Math.sin(boid.brownianPhase2 * 1.7) * 0.5;
-    const brownianY = Math.cos(boid.brownianPhase * 0.8) + Math.cos(boid.brownianPhase2 * 1.3) * 0.5;
+    const brownianX = Math.sin(boid.brownianPhase)
+                    + Math.sin(boid.brownianPhase2 * 1.7) * 0.45
+                    + Math.sin(boid.brownianPhase3 * 2.9) * 0.2
+                    + (Math.random() - 0.5) * 0.25;
+    const brownianY = Math.cos(boid.brownianPhase * 0.85)
+                    + Math.cos(boid.brownianPhase2 * 1.3) * 0.45
+                    + Math.cos(boid.brownianPhase3 * 2.3) * 0.2
+                    + (Math.random() - 0.5) * 0.25;
 
-    const brownianStrength = wobbleAmount * (0.5 + newSpeed * 0.3);
+    const brownianStrength = wobbleAmount * (0.4 + newSpeed * 0.35);
     boid.vx += brownianX * brownianStrength;
     boid.vy += brownianY * brownianStrength;
 
     if (isNaN(boid.vx) || isNaN(boid.vy) || !isFinite(boid.vx) || !isFinite(boid.vy)) {
       const angle = Math.random() * Math.PI * 2;
-      boid.vx = Math.cos(angle) * 0.5;
-      boid.vy = Math.sin(angle) * 0.5;
+      boid.vx = Math.cos(angle) * 0.6;
+      boid.vy = Math.sin(angle) * 0.6;
     }
 
     const finalSpeed = Math.sqrt(boid.vx * boid.vx + boid.vy * boid.vy);
-    const maxAllowedSpeed = 5.0;
+    const maxAllowedSpeed = 6.0;
     if (finalSpeed > maxAllowedSpeed) {
-      boid.vx = (boid.vx / finalSpeed) * maxAllowedSpeed;
-      boid.vy = (boid.vy / finalSpeed) * maxAllowedSpeed;
+      const scale = maxAllowedSpeed / finalSpeed;
+      boid.vx *= scale;
+      boid.vy *= scale;
     }
 
     boid.x += boid.vx;

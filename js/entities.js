@@ -10,6 +10,7 @@ class WhiteBloodCell {
     this.radius = CONFIG.whiteBloodCells.radius;
     this.linearDrag = CONFIG.whiteBloodCells.linearDrag;
     this.quadraticDrag = CONFIG.whiteBloodCells.quadraticDrag;
+    this.cubicDrag = CONFIG.whiteBloodCells.cubicDrag || 0;
     this.minSpeed = CONFIG.whiteBloodCells.minSpeed;
     this.thrustMultiplier = CONFIG.whiteBloodCells.thrustMultiplier;
     this.wobbleAmount = CONFIG.whiteBloodCells.wobbleAmount;
@@ -29,6 +30,7 @@ class WhiteBloodCell {
     this.baseThrust = this.thrustMultiplier;
     this.baseLinearDrag = this.linearDrag;
     this.baseQuadraticDrag = this.quadraticDrag;
+    this.baseCubicDrag = this.cubicDrag;
   }
 
   setDiffusionField(field) {
@@ -60,6 +62,7 @@ class WhiteBloodCell {
     this.thrustMultiplier = this.baseThrust * (1 + this.excitedLevel * 0.6);
     this.linearDrag = this.baseLinearDrag * (1 - this.excitedLevel * 0.3);
     this.quadraticDrag = this.baseQuadraticDrag * (1 - this.excitedLevel * 0.2);
+    this.cubicDrag = this.baseCubicDrag * (1 - this.excitedLevel * 0.15);
     this.attackPower = 10 * (1 + this.excitedLevel * 1.0);
 
     this.state = 'wandering';
